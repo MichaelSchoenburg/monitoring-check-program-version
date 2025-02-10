@@ -1,43 +1,21 @@
 <#
 .SYNOPSIS
-    T22-000215 - Rechnungsversand automatisieren
+    Monitoring-Skript: Programm-Version prüfen
 
 .DESCRIPTION
-    Long description
-
-.SYNTAX
-
-
-.PARAMETERS
-
-
-.EXAMPLE
-    PS C:\> <example usage>
-    Explanation of what the example does
-
-.INPUTS
-    Inputs (if any)
-
-.OUTPUTS
-    Output (if any)
+    Dieses Skript prüft, ob die Version eines beliebigen Programms höher als die spezifizierte Version ist oder nicht und gibt eine entsprechenden Meldung + Exit Code zurück.
 
 .RELATED LINKS
-    GitHub: https://github.com/MichaelSchoenburg/T22-000215
+    GitHub: https://github.com/MichaelSchoenburg/monitoring-check-program-version
 
 .NOTES
     Author: Michael Schönburg
     Version: v1.0
-    Last Edit: 11.02.2021
+    Last Edit: 10.02.2025
     
     This projects code loosely follows the PowerShell Practice and Style guide, as well as Microsofts PowerShell scripting performance considerations.
     Style guide: https://poshcode.gitbook.io/powershell-practice-and-style/
     Performance Considerations: https://docs.microsoft.com/en-us/powershell/scripting/dev-cross-plat/performance/script-authoring-considerations?view=powershell-7.1
-
-.REMARKS
-    To see the examples, type: "get-help Get-HotFix -examples".
-    For more information, type: "get-help Get-HotFix -detailed".
-    For technical information, type: "get-help Get-HotFix -full".
-    For online help, type: "get-help Get-HotFix -online"
 #>
 
 #region INITIALIZATION
@@ -51,6 +29,17 @@
     Declare local variables and global variables
 #>
 
+<#
+The following Variables need to be set by your monitoring software:
+[string]$AppName
+[string]$VersionSoll
+
+Example:
+$AppName = "msedge.exe"
+$VersionSoll = "128.0.2739.79"
+#>
+
+$VersionIsTooLow = $false
 
 #endregion DECLARATIONS
 #region FUNCTIONS
@@ -108,6 +97,26 @@ function Write-ConsoleLog {
     Script entry point
 #>
 
-
+$Path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$AppName"
+Write-Host "Teste, ob der Pfad $Path existiert..."
+if (Test-Path -Path $Path) {
+    Write-Host "Der Pfad existiert. Bestimme Version..."
+    $versionIst = (Get-Item (Get-ItemProperty $Path).'(Default)').VersionInfo.ProductVersion
+    
+    if ([System.Version]$versionIst -lt [System.Version]$versionSoll) {
+        $VersionIsTooLow = $true
+    }
+    
+    if ($VersionIsTooLow) {
+        Write-Host "Fehler: Die Version von $AppName ist $($versionIst), sollte aber mindestens $($versionSoll) sein."
+        
+    } else {
+        Write-Host "Erfolg: Die Version von $AppName ist $($versionIst) und sollte mindestens $($versionSoll) sein."
+        
+    }    
+} else {
+    Write-Host "Warnung: Der Pfad existiert nicht, somit kann die Version nicht bestimmt werden."
+    
+}
 
 #endregion EXECUTION
